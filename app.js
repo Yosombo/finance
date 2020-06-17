@@ -20,6 +20,27 @@ var uiController = (function () {
     getDOMstrings: function () {
       return DOMstrings;
     },
+
+    addListItem: function (item, type) {
+      // 1. ОРЛОГО ЗАРЛАГЫН ЭЛЕМЕНТИЙГ АГУУЛСАН HTML-ИЙГ БЭЛТГЭНЭ
+      var HTML, list;
+      if (type === "inc") {
+        (list = ".income__list"),
+          (html =
+            '<div class="item clearfix" id="income-%%id%%"><div class="item__description">%%DESCRIPTION%%</div><div class="right clearfix"><div class="item__value">%%value%%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>');
+      } else {
+        (list = ".expenses__list"),
+          (html =
+            '<div class="item clearfix" id="expense-%%id%%"><div class="item__description">%%DESCRIPTION%%</div><div class="right clearfix"><div class="item__value">%%value%%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>');
+      }
+      // 2. ТЭР HTML ДОТРОО ОРЛОГО ЗАРЛАГЫН УТГУУДЫГ  REPLACE АШИГЛАЖ ӨӨРЧИЛЖ ӨГНӨ
+      html = html.replace("%%id%%", item.id);
+      html = html.replace("%%DESCRIPTION%%", item.description);
+      html = html.replace("%%value%%", item.value);
+
+      // БЭЛТГЭСЭН HTML-ЭЭ DOM-РУУ ХИЙЖ ӨГНӨ
+      document.querySelector(list).insertAdjacentHTML("beforeend", html);
+    },
   };
 })();
 
@@ -63,7 +84,8 @@ var financeController = (function () {
         item = new Expense(id, desc, val);
       }
       data.items[type].push(item);
-      alert("item added..");
+
+      return item;
     },
     seeData: function () {
       return data;
@@ -78,9 +100,15 @@ var appController = (function (uiController, financeController) {
     var input = uiController.getInput();
 
     // 2. ОЛЖ АВСАН ӨГӨГДӨЛҮҮДЭЭ САНХҮҮГИЙН МОДУЛЬ  ХАДГАЛНА.
-    financeController.addItem(input.type, input.description, input.value);
+    var item = financeController.addItem(
+      input.type,
+      input.description,
+      input.value
+    );
 
     // 3. ОЛЖ АВСАН ӨГӨГЛӨЛҮҮДЭЭ ВЭБ ДЭЭРЭЭ ТОХИРОХ ХЭСЭГТ НЬ ГАРГАНА.
+    uiController.addListItem(item, input.type);
+
     // 4. ТӨСВИЙГ ТООЦООЛНО.
     // 5. ЭЦСИЙН ҮЛДЭГДЭЛ, ТООЦООГ ДЭЛГЭЦЭНД ГАРГАНА.
   };
