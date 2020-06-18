@@ -51,9 +51,7 @@ var uiController = (function () {
         document.querySelector(DOMstrings.percentageLabel).textContent =
           tusuv.huvi + "%";
       } else {
-        document.querySelector(
-          DOMstrings.percentageLabel
-        ).textContent = tusuv.huvi = " ";
+        document.querySelector(DOMstrings.percentageLabel).textContent = " ";
       }
     },
 
