@@ -13,10 +13,54 @@ var uiController = (function () {
     expenseLabel: ".budget__expenses--value",
     percentageLabel: ".budget__expenses--percentage",
     containerDiv: ".container",
+    expensePercentageLabel: ".item__percentage",
+    dateLabel: ".budget__title--month",
+  };
+  var nodeListForeach = function (list, callback) {
+    for (var i = 0; i < list.length; i++) {
+      callback(list[i], i);
+    }
   };
 
-  // ПАБЛИК СЭРВИС БУЮУ ГАДАГШАА ГАРГАХ ОБЕКТ -public-
+  // Мөнгөн дүнг дэлгэцэн үзүүлэхдээ 3 оронгоор нь тасалж таслал тавих
+  var formatMoney = function (too, type) {
+    // тоог string болгох
+    too = "" + too;
+
+    // өгөгдөлийг нэг бүрчлэн хуваагаад урвуу байрлуулаад нэгтгэн массив болгох(123456789 ===> 987654321)
+    var x = too.split("").reverse().join("");
+
+    var y = "";
+    var count = 1;
+    // массивын индэкс 3т хуваагддаг тоо байх юм бол ард нь таслал залгах( 987,654,321,)
+    for (var i = 0; i < x.length; i++) {
+      y = y + x[i];
+
+      if (count % 3 === 0) y = y + ",";
+      count++;
+    }
+    // урвуу дараалалтай  өгөгдөлөө буцаагаад зөв дараалалтай болгох(,123,456,789)
+    var z = y.split("").reverse().join("");
+
+    //эхний таслалыг алга болгох(,123,456,789 ===> 123,456,789)
+    if (z[0] === ",") z = z.substr(1, z.length - 1);
+
+    //  орлого бол урд нь, зарлаг бол урд нь тэмдэг тавих
+    if (type === "inc") z = "+ " + z;
+    else z = "- " + z;
+
+    return z;
+  };
+
+  // -------------PUBLIC SERVICE БУЮУ ГАДАГШАА ГАРГАХ ОБЕКТ -public-
   return {
+    displayDates: function () {
+      var unuudur = new Date();
+
+      document.querySelector(DOMstrings.dateLabel).textContent =
+        unuudur.getMonth() + "-р сарын өрхийн санхүү";
+    },
+
     getInput: function () {
       return {
         type: document.querySelector(DOMstrings.inputType).value, //exp or inc
@@ -26,6 +70,18 @@ var uiController = (function () {
         value: parseInt(document.querySelector(DOMstrings.inputValue).value),
       };
     },
+
+    displayPercnetages: function (allPercentages) {
+      // Зарлагын NOdeListийг олох
+      var elements = document.querySelectorAll(
+        DOMstrings.expensePercentageLabel
+      );
+      //Элемент болгоны хувьд зарлагын хувийг үзүүлэх
+      nodeListForeach(elements, function (el, index) {
+        el.textContent = allPercentages[index] + "%";
+      });
+    },
+
     getDOMstrings: function () {
       return DOMstrings;
     },
@@ -45,11 +101,22 @@ var uiController = (function () {
     },
 
     tusviigUzuuleh: function (tusuv) {
-      document.querySelector(DOMstrings.budgetLabel).textContent = tusuv.tusuv;
-      document.querySelector(DOMstrings.incomeLabel).textContent =
-        tusuv.totalInc;
-      document.querySelector(DOMstrings.expenseLabel).textContent =
-        tusuv.totalExp;
+      var type;
+      if (tusuv.tusuv > 0) type = "inc";
+      else type = "exp";
+
+      document.querySelector(DOMstrings.budgetLabel).textContent = formatMoney(
+        tusuv.tusuv,
+        type
+      );
+      document.querySelector(DOMstrings.incomeLabel).textContent = formatMoney(
+        tusuv.totalInc,
+        "inc"
+      );
+      document.querySelector(DOMstrings.expenseLabel).textContent = formatMoney(
+        tusuv.totalExp,
+        "exp"
+      );
       if (tusuv.huvi !== 0) {
         document.querySelector(DOMstrings.percentageLabel).textContent =
           tusuv.huvi + "%";
@@ -77,7 +144,7 @@ var uiController = (function () {
       // 2. ТЭР HTML ДОТРОО ОРЛОГО ЗАРЛАГЫН УТГУУДЫГ  REPLACE АШИГЛАЖ ӨӨРЧИЛЖ ӨГНӨ
       html = html.replace("%%id%%", item.id);
       html = html.replace("%%DESCRIPTION%%", item.description);
-      html = html.replace("%%value%%", item.value);
+      html = html.replace("%%value%%", formatMoney(item.value, type));
 
       // БЭЛТГЭСЭН HTML-ЭЭ DOM-РУУ ХИЙЖ ӨГНӨ
       document.querySelector(list).insertAdjacentHTML("beforeend", html);
@@ -92,11 +159,25 @@ var financeController = (function () {
     this.id = id;
     this.description = description;
     this.value = value;
+    this.percentage = -1;
   };
   var Expense = function (id, description, value) {
     this.id = id;
     this.description = description;
     this.value = value;
+    this.percentage = -1;
+  };
+
+  // expense байгуулагч функцийн prototype-руу calcPercentage функц нэмэх
+  Expense.prototype.calcPersentage = function (totalInc) {
+    if (totalInc > 0)
+      this.percentage = Math.round((this.value / totalInc) * 100);
+    else this.percentage = "";
+  };
+
+  // expense байгуулагч функцийн prototype-руу getPercentage функц нэмэх
+  Expense.prototype.getPercentage = function () {
+    return this.percentage;
   };
 
   var calculateTotal = function (type) {
@@ -124,7 +205,7 @@ var financeController = (function () {
     huvi: 0,
   };
 
-  //   PUBLIC SERVICE -public-
+  //   ---------------- FINANCE PUBLIC SERVICE
   return {
     tusuvtootsoh: function () {
       // НИЙТ ОРЛОГЫН НИЙЛБЭРИЙГ ТООЦОХ
@@ -137,9 +218,30 @@ var financeController = (function () {
       data.tusuv = data.totals.inc - data.totals.exp;
 
       // ОРЛОГО ЗАРЛАГЫГ ХУВЬЧЛАН ҮЗҮҮЛЭХ
-      data.huvi = Math.round((data.totals.exp / data.totals.inc) * 100);
+      if (data.totals.inc > 0) {
+        data.huvi = Math.round((data.totals.exp / data.totals.inc) * 100);
+      } else data.huvi = "";
     },
+    calculatePercentages: function () {
+      data.items.exp.forEach(function (el) {
+        el.calcPersentage(data.totals.inc);
+      });
+    },
+    getPercentages: function () {
+      var allPercentages = data.items.exp.map(function (el) {
+        return el.getPercentage();
+      });
 
+      return allPercentages;
+    },
+    tusviigAvah: function () {
+      return {
+        tusuv: data.tusuv,
+        huvi: data.huvi,
+        totalInc: data.totals.inc,
+        totalExp: data.totals.exp,
+      };
+    },
     deleteItem: function (type, id) {
       // IDг шүүж авах шинэ массив
       var ids = data.items[type].map(function (el) {
@@ -149,20 +251,10 @@ var financeController = (function () {
       var index = ids.indexOf(id);
 
       // дугаарыг нь олоод ориг массиваас устгах
-      if (index !== 1) {
+      if (index !== -1) {
         data.items[type].splice(index, 1);
       }
     },
-
-    tusviigAvah: function () {
-      return {
-        tusuv: data.tusuv,
-        huvi: data.huvi,
-        totalInc: data.totals.inc,
-        totalExp: data.totals.exp,
-      };
-    },
-
     addItem: function (type, desc, val) {
       var item, id;
       if (data.items[type].length === 0) id = 1;
@@ -204,15 +296,29 @@ var appController = (function (uiController, financeController) {
       uiController.addListItem(item, input.type);
       uiController.clearFields();
 
-      // 4. ТӨСВИЙГ ТООЦООЛНО.
-      financeController.tusuvtootsoh();
-
-      // 5. ЭЦСИЙН ҮЛДЭГДЭЛ
-      var tusuv = financeController.tusviigAvah();
-
-      // 6.  ТООЦООГ ДЭЛГЭЦЭНД ГАРГАНА.
-      uiController.tusviigUzuuleh(tusuv);
+      // ТӨСВИЙГ ШИНЭЭР ТООЦООЛОН ДЭЛГЭЦЭНД ҮЗҮҮЛЭХ
+      updateTusuv();
     }
+  };
+
+  var updateTusuv = function () {
+    // 4. ТӨСВИЙГ ТООЦООЛНО.
+    financeController.tusuvtootsoh();
+
+    // 5. ЭЦСИЙН ҮЛДЭГДЭЛ
+    var tusuv = financeController.tusviigAvah();
+
+    // 6.  ТООЦООГ ДЭЛГЭЦЭНД ГАРГАНА.
+    uiController.tusviigUzuuleh(tusuv);
+
+    // 7. ЭЛЕМЕНТҮҮДИЙН ХУВИЙГ ТООЦООЛНО
+    financeController.calculatePercentages();
+
+    // 8. ЭЛЕМЕНТҮҮДИЙН ХУВИЙГ ХҮЛЭЭЖ АВНА
+    var allPercentages = financeController.getPercentages();
+
+    // 9. ЭЛЕМЕНТҮҮДИЙН ХУВИЙГ ДЭЛГЭЦЭНД ГАРГАНА
+    uiController.displayPercnetages(allPercentages);
   };
 
   //   EVENT LISTENER БУЮУ ТОВЧЛУУР ХАРИУЦСАН ХОЛБОГЧ ФУНКЦ
@@ -241,16 +347,20 @@ var appController = (function (uiController, financeController) {
           var type = arr[0];
           var itemID = parseInt(arr[1]);
         }
-        //  санхүүгийн модулиас  ашиглан устах
+        // 1. санхүүгийн модулиас  ашиглан устах
         financeController.deleteItem(type, itemID);
-        // дэлгэцээс устгах
+
+        // 2. дэлгэцээс устгах
         uiController.deleteListItem(id);
-        // үлдэгдэл тооцоог шинэчлэх
+
+        // 3. ТӨСВИЙГ ШИНЭЭР ТООЦООЛОН ДЭЛГЭЦЭНД ҮЗҮҮЛЭХ
+        updateTusuv();
       });
   };
   // ПРОГРАММЫГ ЭХЛҮҮЛЭХ, ИДВЭХЖҮҮЛЭХ
   return {
     init: function () {
+      uiController.displayDates();
       uiController.tusviigUzuuleh({
         tusuv: 0,
         huvi: 0,
