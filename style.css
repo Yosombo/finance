@@ -88,6 +88,7 @@ body {
 
 .budget__income--text,
 .budget__expenses--text {
+  color: white !important;
   float: left;
   font-size: 13px;
   color: #444;
