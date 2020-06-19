@@ -72,6 +72,7 @@ body {
 
 .budget__income,
 .budget__expenses {
+  border-radius: 5px;
   padding: 12px;
   text-transform: uppercase;
 }
@@ -226,7 +227,7 @@ h2 {
 }
 
 .item:first-child {
-  border-top: 1px solid #e7e7e7;
+  border-top: 1px dotted #e7e7e7;
 }
 .item:nth-child(even) {
   background-color: #f7f7f7;

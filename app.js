@@ -61,6 +61,22 @@ var uiController = (function () {
         unuudur.getMonth() + "-р сарын өрхийн санхүү";
     },
 
+    changeType: function () {
+      var fields = document.querySelectorAll(
+        DOMstrings.inputType +
+          ", " +
+          DOMstrings.inputDescription +
+          ", " +
+          DOMstrings.inputValue
+      );
+
+      nodeListForeach(fields, function (el) {
+        el.classList.toggle("red-focus");
+      });
+
+      document.querySelector(DOMstrings.addBtn).classList.toggle("red");
+    },
+
     getInput: function () {
       return {
         type: document.querySelector(DOMstrings.inputType).value, //exp or inc
@@ -337,6 +353,9 @@ var appController = (function (uiController, financeController) {
       if (event.keyCode === 13 || event.which === 13) ctrlAddItem();
     });
 
+    document
+      .querySelector(DOM.inputType)
+      .addEventListener("change", uiController.changeType);
     // DELETE BTN
     document
       .querySelector(DOM.containerDiv)
