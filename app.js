@@ -12,6 +12,7 @@ var uiController = (function () {
     incomeLabel: ".budget__income--value",
     expenseLabel: ".budget__expenses--value",
     percentageLabel: ".budget__expenses--percentage",
+    containerDiv: ".container",
   };
 
   // ПАБЛИК СЭРВИС БУЮУ ГАДАГШАА ГАРГАХ ОБЕКТ -public-
@@ -19,7 +20,9 @@ var uiController = (function () {
     getInput: function () {
       return {
         type: document.querySelector(DOMstrings.inputType).value, //exp or inc
+
         description: document.querySelector(DOMstrings.inputDescription).value,
+
         value: parseInt(document.querySelector(DOMstrings.inputValue).value),
       };
     },
@@ -54,6 +57,10 @@ var uiController = (function () {
         document.querySelector(DOMstrings.percentageLabel).textContent = " ";
       }
     },
+    deleteListItem: function (id) {
+      var el = document.getElementById(id);
+      el.parentNode.removeChild(el);
+    },
 
     addListItem: function (item, type) {
       // 1. ОРЛОГО ЗАРЛАГЫН ЭЛЕМЕНТИЙГ АГУУЛСАН HTML-ИЙГ БЭЛТГЭНЭ
@@ -61,11 +68,11 @@ var uiController = (function () {
       if (type === "inc") {
         (list = DOMstrings.incomeList),
           (html =
-            '<div class="item clearfix" id="income-%%id%%"><div class="item__description">%%DESCRIPTION%%</div><div class="right clearfix"><div class="item__value">%%value%%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>');
+            '<div class="item clearfix" id="inc-%%id%%"><div class="item__description">%%DESCRIPTION%%</div><div class="right clearfix"><div class="item__value">%%value%%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>');
       } else {
         (list = DOMstrings.expenseList),
           (html =
-            '<div class="item clearfix" id="expense-%%id%%"><div class="item__description">%%DESCRIPTION%%</div><div class="right clearfix"><div class="item__value">%%value%%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>');
+            '<div class="item clearfix" id="exp-%%id%%"><div class="item__description">%%DESCRIPTION%%</div><div class="right clearfix"><div class="item__value">%%value%%</div><div class="item__percentage">21%</div><div class="item__delete"><button class="item__delete--btn"><i class="ion-ios-close-outline"></i></button></div></div></div>');
       }
       // 2. ТЭР HTML ДОТРОО ОРЛОГО ЗАРЛАГЫН УТГУУДЫГ  REPLACE АШИГЛАЖ ӨӨРЧИЛЖ ӨГНӨ
       html = html.replace("%%id%%", item.id);
@@ -133,6 +140,20 @@ var financeController = (function () {
       data.huvi = Math.round((data.totals.exp / data.totals.inc) * 100);
     },
 
+    deleteItem: function (type, id) {
+      // IDг шүүж авах шинэ массив
+      var ids = data.items[type].map(function (el) {
+        return el.id;
+      });
+      // устгах IDний индэкс дугаар
+      var index = ids.indexOf(id);
+
+      // дугаарыг нь олоод ориг массиваас устгах
+      if (index !== 1) {
+        data.items[type].splice(index, 1);
+      }
+    },
+
     tusviigAvah: function () {
       return {
         tusuv: data.tusuv,
@@ -155,6 +176,7 @@ var financeController = (function () {
         //type = exp
         item = new Expense(id, desc, val);
       }
+
       data.items[type].push(item);
 
       return item;
@@ -193,18 +215,38 @@ var appController = (function (uiController, financeController) {
     }
   };
 
-  //   ЭВЭНТ ЛИСТЭНЭР БУЮУ ТОВЧЛУУР ХАРИУЦСАН ХОЛБОГЧ ФУНКЦ
+  //   EVENT LISTENER БУЮУ ТОВЧЛУУР ХАРИУЦСАН ХОЛБОГЧ ФУНКЦ
 
   var setupEventListener = function () {
     // HTML КЛАССУУДЫГ СОНГОХ ХЭСЭГ
     var DOM = uiController.getDOMstrings();
 
+    // MOUSE CLICK
     document.querySelector(DOM.addBtn).addEventListener("click", function () {
       ctrlAddItem();
     });
+
+    // ENTER
     document.addEventListener("keypress", function (event) {
       if (event.keyCode === 13 || event.which === 13) ctrlAddItem();
     });
+
+    // DELETE BTN
+    document
+      .querySelector(DOM.containerDiv)
+      .addEventListener("click", function (event) {
+        var id = event.target.parentNode.parentNode.parentNode.parentNode.id;
+        if (id) {
+          var arr = id.split("-");
+          var type = arr[0];
+          var itemID = parseInt(arr[1]);
+        }
+        //  санхүүгийн модулиас  ашиглан устах
+        financeController.deleteItem(type, itemID);
+        // дэлгэцээс устгах
+        uiController.deleteListItem(id);
+        // үлдэгдэл тооцоог шинэчлэх
+      });
   };
   // ПРОГРАММЫГ ЭХЛҮҮЛЭХ, ИДВЭХЖҮҮЛЭХ
   return {
